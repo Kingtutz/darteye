@@ -1,0 +1,7 @@
+# local HTTPS certificate: generated per machine by serve_https.py, the key must never be published
+darteye.key
+darteye.crt
+*.pem
+
+.claude/
+__pycache__/
