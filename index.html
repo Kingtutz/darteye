@@ -1271,9 +1271,10 @@ function addDart(h,auto){
   h=Object.assign({},h,{auto:!!auto});
   if(sel!==null&&sel<G.turn.darts.length&&!auto){const ds=G.turn.darts.slice();ds[sel]=h;sel=null;editTurn(ds);return;}
   sel=null;applyDart(G,h);
-  say(dartWords(h));
+  // like a real caller: the dart that ends the visit is announced as the visit total
+  const M=MODE(G),endCall=G.result?'':turnOver(G)?(G.turn.bust?'Bust':M.call?M.call(G):turnWords(tScore(G))):'';
+  if(!G.result)say(endCall||dartWords(h),!!endCall);
   if(G.result)onWin();
-  else if(turnOver(G)){const M=MODE(G);say(G.turn.bust?'Bust':M.call?M.call(G):turnWords(tScore(G)));}
   logTurn();render();
 }
 function editTurn(darts){
@@ -1345,9 +1346,24 @@ function checkout(score,left,dbl){
 
 /* ---------- caller voice ---------- */
 let voiceReady=false;
-function say(t){
+// Our own queue: Safari (especially on iPad) drops phrases queued back-to-back, and can garbage-collect an
+// utterance before it plays. So speak one at a time, keep a reference until it ends, with a timeout fallback.
+const sayQ=[];let sayNow=null,sayTimer=0;
+function say(t,important=true){
   if(!S.voice||!t||!window.speechSynthesis)return;
-  try{const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=1.05;speechSynthesis.speak(u);}catch(e){}
+  sayQ.push({t,important});
+  // fast play shouldn't build a backlog: drop single-dart calls first, never totals or "you require"
+  while(sayQ.length>3){const i=sayQ.findIndex(x=>!x.important);if(i<0)break;sayQ.splice(i,1);}
+  sayNext();
+}
+function sayNext(){
+  if(sayNow||!sayQ.length)return;
+  const u=new SpeechSynthesisUtterance(sayQ.shift().t);
+  u.lang='en-GB';u.rate=1.05;sayNow=u;
+  const done=()=>{if(sayNow!==u)return;sayNow=null;clearTimeout(sayTimer);setTimeout(sayNext,120);};
+  u.onend=done;u.onerror=done;
+  sayTimer=setTimeout(done,2500+u.text.length*90);
+  try{speechSynthesis.speak(u);}catch(e){done();}
 }
 function dartWords(h){
   if(h.mult===0)return h.bo?'bounce out':'miss';
@@ -1561,7 +1577,8 @@ $('#btnRotL').onclick=()=>rotateCal(1);
 $('#btnRotR').onclick=()=>rotateCal(-1);
 $('#btnEmpty').onclick=()=>{resetDetector();toast(captureBoardPhoto()?'Empty board captured · photo saved':'Empty board captured');};
 $('#sBoard').onchange=e=>{S.boardStyle=e.target.value;persist();render();};
-$('#btnVoice').onclick=()=>{S.voice=!S.voice;persist();$('#btnVoice').textContent=S.voice?'🔊':'🔇';toast(S.voice?'Caller on':'Caller off');};
+$('#btnVoice').onclick=()=>{S.voice=!S.voice;persist();
+  if(!S.voice){sayQ.length=0;try{speechSynthesis.cancel();}catch(e){}}$('#btnVoice').textContent=S.voice?'🔊':'🔇';toast(S.voice?'Caller on':'Caller off');};
 $('#btnView').onclick=()=>{S.showCam=!S.showCam;persist();document.body.classList.toggle('nocamview',!S.showCam);setTimeout(render,50);};
 $('#btnFull').onclick=()=>{const el=document.documentElement;try{if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document);else(el.requestFullscreen||el.webkitRequestFullscreen).call(el);}catch(e){toast('Use Share → Add to Home Screen for full screen');}};
 $('#btnRematch').onclick=rematch;
