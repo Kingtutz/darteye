@@ -35,9 +35,34 @@ Auto-scoring for a steel-tip dartboard with **one camera**, an **iPad** and a **
 
 Tip: in Safari, use *Share → Add to Home Screen* to run it full-screen.
 
+## Code layout
+
+No build step and no dependencies: plain HTML, CSS and JavaScript. The scripts are loaded in order by `index.html` and share one global scope, so keep that order when adding files.
+
+| File | What's in it |
+|---|---|
+| `index.html` | Page layout: scoreboard, board, camera screen, dialogs |
+| `css/style.css` | All styling |
+| `js/util.js` | DOM helpers, saved settings |
+| `js/board.js` | Board geometry and scoring, the drawn board, calibration maths |
+| `js/simulator.js` | Fake camera for testing without a board |
+| `js/camera.js` | Camera source, digital zoom, board photo |
+| `js/autoalign.js` | Finds the board in the picture and calibrates |
+| `js/detection.js` | Spots new darts and finds the tip |
+| `js/checkout.js` | Checkout suggestions |
+| `js/games.js` | Every game mode: rules, scoreboard text, targets |
+| `js/sprites.js` | Drawn darts, zombies, asteroids, badges, trees |
+| `js/turns.js` | Turn flow shared by all games: darts, corrections, undo, wins |
+| `js/voice.js` | Caller voice |
+| `js/render.js` | Drawing the scoreboard, board and camera preview |
+| `js/calibration-ui.js` | Camera screen: calibration points, pinch zoom, settings |
+| `js/app.js` | Buttons, new-game picker, main loop, start-up |
+
+To add a game, add an entry to `MODES` in `js/games.js`. It shows up in the picker automatically.
+
 ## Running it locally
 
-The whole app is one file, `index.html`. To serve it on your home network with HTTPS (Safari needs HTTPS for the camera):
+To serve it on your home network with HTTPS (Safari needs HTTPS for the camera):
 
 ```bash
 pip install cryptography
