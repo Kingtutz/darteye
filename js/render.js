@@ -59,30 +59,56 @@ function logTurn(){
   if(G.turn.darts.length===1)el.insertAdjacentHTML('afterbegin',line);else if(el.firstElementChild)el.firstElementChild.outerHTML=line;
   while(el.children.length>30)el.lastElementChild.remove();
 }
-function drawSourceInto(c,cw,ch){
-  const[w,h]=srcSize();if(!w)return null;
+function drawSourceInto(cam,c,cw,ch){
+  const[w,h]=srcSize(cam);if(!w)return null;
   const s=Math.min(cw/w,ch/h),dw=w*s,dh=h*s,rect={x:(cw-dw)/2,y:(ch-dh)/2,w:dw,h:dh};
-  drawSrc(c,rect.x,rect.y,dw,dh);return rect;
+  drawSrc(cam,c,rect.x,rect.y,dw,dh);return rect;
 }
-function drawWire(c,rect,lw){
-  if(!CAL.Hinv)return;
-  const m=(x,y)=>{const[u,v]=applyH(CAL.Hinv,x,y);return[rect.x+u*rect.w,rect.y+v*rect.h];};
+function drawWire(cam,c,rect,lw){
+  if(!cam.cal.Hinv)return;
+  const m=(x,y)=>{const[u,v]=applyH(cam.cal.Hinv,x,y);return[rect.x+u*rect.w,rect.y+v*rect.h];};
   c.strokeStyle='rgba(47,212,163,.9)';c.lineWidth=lw;
   for(const r of [R.DB,R.SB,R.TI,R.TO,R.DI,R.DO]){c.beginPath();for(let k=0;k<=96;k++){const a=k/96*Math.PI*2,[x,y]=m(r*Math.sin(a),r*Math.cos(a));k?c.lineTo(x,y):c.moveTo(x,y);}c.stroke();}
   for(let i=0;i<20;i++){const a=rad(i*18+9);c.beginPath();c.moveTo(...m(R.SB*Math.sin(a),R.SB*Math.cos(a)));c.lineTo(...m(R.DO*Math.sin(a),R.DO*Math.cos(a)));c.stroke();}
   const[tx,ty]=m(0,198);c.fillStyle='#2fd4a3';c.font=`bold ${lw*9}px system-ui`;c.textAlign='center';c.textBaseline='middle';c.fillText('20',tx,ty);
 }
-function drawDetection(c,rect){
-  const L=D.last;if(!L||performance.now()-L.t>60000)return;
-  const sx=rect.w/PW,sy=rect.h/PH;
+function drawDetection(cam,c,rect){
+  const L=cam.det.last;if(!L||performance.now()-L.t>60000)return;
+  const{PW,PH}=cam,sx=rect.w/PW,sy=rect.h/PH;
   if(S.debug){c.fillStyle='rgba(255,60,200,.55)';for(const i of L.pix)c.fillRect(rect.x+(i%PW)*sx,rect.y+((i/PW)|0)*sy,sx,sy);}
   if(L.ends){c.strokeStyle='rgba(255,194,75,.9)';c.lineWidth=1.5;c.beginPath();c.moveTo(rect.x+L.ends[0][0]*sx,rect.y+L.ends[0][1]*sy);c.lineTo(rect.x+L.ends[1][0]*sx,rect.y+L.ends[1][1]*sy);c.stroke();}
   const x=rect.x+L.tip.x*sx,y=rect.y+L.tip.y*sy;
   c.strokeStyle='#ff3b4f';c.lineWidth=2;c.beginPath();c.arc(x,y,7,0,Math.PI*2);c.moveTo(x-12,y);c.lineTo(x+12,y);c.moveTo(x,y-12);c.lineTo(x,y+12);c.stroke();
+  // where all cameras together put the tip, drawn in this camera's view (green): shows whether they agree
+  const F=FUSE.last;
+  if(F&&F.reports.length>1&&cam.cal.Hinv&&Math.abs(F.t-L.t)<2000){
+    const[u,v]=applyH(cam.cal.Hinv,F.pt[0],F.pt[1]),fx=rect.x+u*rect.w,fy=rect.y+v*rect.h;
+    c.fillStyle='#2fd4a3';c.beginPath();c.arc(fx,fy,4,0,Math.PI*2);c.fill();
+  }
 }
+// one preview tile per camera; tap a tile to open that camera's settings
 function drawPreview(){
-  if(!S.showCam||SRC==='none')return;
-  const cv=$('#preview'),c=cv.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,cv.width,cv.height);
-  const rect=drawSourceInto(c,cv.width,cv.height);if(!rect)return;
-  drawWire(c,rect,1.2);drawDetection(c,rect);
+  const grid=$('#camGrid');
+  const helpers=typeof HELPERS!=='undefined'?HELPERS:[],keep=CAMS.map(c=>String(c.id)).concat(helpers.map(h=>h.key));
+  for(const el of [...grid.querySelectorAll('canvas')])if(!keep.includes(el.dataset.cam))el.remove();
+  grid.classList.toggle('multi',CAMS.length+helpers.length>1);
+  if(!S.showCam)return;
+  for(const h of helpers){ // phones send a small preview picture now and then
+    let cv=grid.querySelector(`canvas[data-cam="${h.key}"]`);
+    if(!cv){cv=document.createElement('canvas');cv.width=320;cv.height=240;cv.dataset.cam=h.key;cv.onclick=()=>openPairing();grid.appendChild(cv);}
+    const c=cv.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,320,240);
+    if(h.img)c.drawImage(h.img,0,0,320,240);
+    c.fillStyle='rgba(0,0,0,.65)';c.fillRect(0,0,320,24);c.fillStyle=h.ready?'#2fd4a3':'#ffc24b';
+    c.font='bold 13px system-ui';c.textAlign='left';c.textBaseline='middle';c.fillText(`📱 ${h.label}${h.ready?'':' · not calibrated'}`,8,12);
+  }
+  for(const cam of CAMS){
+    let cv=grid.querySelector(`canvas[data-cam="${cam.id}"]`);
+    if(!cv){cv=document.createElement('canvas');cv.width=640;cv.height=480;cv.dataset.cam=cam.id;
+      cv.onclick=()=>{openCal();selectCam(cam);};grid.appendChild(cv);}
+    const c=cv.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,cv.width,cv.height);
+    const rect=drawSourceInto(cam,c,cv.width,cv.height);if(!rect)continue;
+    drawWire(cam,c,rect,1.2);drawDetection(cam,c,rect);
+    if(CAMS.length>1){c.fillStyle='rgba(0,0,0,.6)';c.fillRect(6,6,34,26);c.fillStyle=cam.state==='lost'?'#ff4d5e':'#fff';
+      c.font='bold 18px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(CAMS.indexOf(cam)+1,23,20);}
+  }
 }

@@ -14,6 +14,18 @@ Auto-scoring for a steel-tip dartboard with **one camera**, an **iPad** and a **
 - **Caller voice**, checkout suggestions with the target highlighted on the board, and averages / marks-per-round stats.
 - Works without a camera too: tap the board to score.
 
+## More cameras, more accuracy
+
+Each camera sees a dart as a line. Mapped onto the board, that line runs through the tip, so lines from cameras at different angles cross at the tip. DartEye combines every camera's view of each dart. When cameras disagree, for example one picked the wrong end of the dart or saw a shadow, a vote throws out the odd one.
+
+In simulator tests on 30 darts, a single camera scored 26–27 correctly, with occasional big misses. Three cameras together scored 29/30, with a median error of 1.2 mm and a worst of 2.4 mm.
+
+- **On a PC or Mac:** plug in 2–3 USB webcams, then on the camera screen tap **+ Add camera** for each.
+- **On an iPad:** Safari can run only one camera at a time. Add more angles with phones: tap **📱 Phone camera**, scan the QR code with a phone, stand the phone up, and tap **✨ Auto-align** on it. The phone does its own detection and sends only the dart's position, not video. Both devices must be on the same Wi-Fi.
+- Spread cameras around the board, ideally 90° or more apart. Cameras close together see the dart along nearly the same line, which helps much less.
+
+Phone pairing loads [PeerJS](https://peerjs.com) and [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) only when you open it. PeerJS's free server introduces the two devices; after that they talk directly.
+
 ## Games
 
 | Classic | Practice | Arcade |
@@ -45,10 +57,11 @@ No build step and no dependencies: plain HTML, CSS and JavaScript. The scripts a
 | `css/style.css` | All styling |
 | `js/util.js` | DOM helpers, saved settings |
 | `js/board.js` | Board geometry and scoring, the drawn board, calibration maths |
-| `js/simulator.js` | Fake camera for testing without a board |
-| `js/camera.js` | Camera source, digital zoom, board photo |
+| `js/simulator.js` | Fake cameras (three angles) for testing without a board |
+| `js/camera.js` | Cameras: adding/removing, digital zoom, calibration, board photo |
 | `js/autoalign.js` | Finds the board in the picture and calibrates |
-| `js/detection.js` | Spots new darts and finds the tip |
+| `js/detection.js` | Spots new darts in each camera and finds the tip and the dart's line |
+| `js/fusion.js` | Combines every camera's view of a dart into one position |
 | `js/checkout.js` | Checkout suggestions |
 | `js/games.js` | Every game mode: rules, scoreboard text, targets |
 | `js/sprites.js` | Drawn darts, zombies, asteroids, badges, trees |
@@ -57,6 +70,7 @@ No build step and no dependencies: plain HTML, CSS and JavaScript. The scripts a
 | `js/render.js` | Drawing the scoreboard, board and camera preview |
 | `js/calibration-ui.js` | Camera screen: calibration points, pinch zoom, settings |
 | `js/app.js` | Buttons, new-game picker, main loop, start-up |
+| `js/helper.js` | Phones as helper cameras: QR pairing and sending darts to the main screen |
 
 To add a game, add an entry to `MODES` in `js/games.js`. It shows up in the picker automatically.
 
@@ -73,4 +87,4 @@ It prints the address to open and creates a certificate for your PC. To trust it
 
 ## Testing without a board
 
-Pick **Simulator** in the camera list. It renders a board at an angle and throws virtual darts, so you can try detection, auto-align and zoom with no camera.
+Pick **Simulator view** in the camera list and tap **+ Add camera**. Add it up to three times to get three angles. It renders a board and throws virtual darts, so you can try detection, auto-align, zoom and multi-camera with no hardware.

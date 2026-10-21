@@ -17,12 +17,13 @@ $('#btnUndo').onclick=undo;
 $('#btnNext').onclick=()=>{if(!G.turn.darts.length&&!G.result){toast('No darts this turn yet');return;}nextTurn();};
 $('#btnCam').onclick=openCal;
 $('#btnCalDone').onclick=closeCal;
-$('#btnStartSrc').onclick=()=>startSource($('#srcSel').value);
-$('#btnCalReset').onclick=()=>setCal([]);
-$('#btnAuto').onclick=()=>autoAlign(false);
-$('#btnRotL').onclick=()=>rotateCal(1);
-$('#btnRotR').onclick=()=>rotateCal(-1);
-$('#btnEmpty').onclick=()=>{resetDetector();toast(captureBoardPhoto()?'Empty board captured · photo saved':'Empty board captured');};
+$('#btnAddCam').onclick=()=>addCamera($('#srcSel').value);
+$('#btnRemoveCam').onclick=()=>removeCamera(CUR);
+$('#btnCalReset').onclick=()=>{if(CUR)setCal(CUR,[]);};
+$('#btnAuto').onclick=()=>{if(CUR)autoAlign(CUR,false);else toast('Add a camera first');};
+$('#btnRotL').onclick=()=>rotateCal(CUR,1);
+$('#btnRotR').onclick=()=>rotateCal(CUR,-1);
+$('#btnEmpty').onclick=()=>{CAMS.forEach(resetDetector);if(typeof broadcastHelpers==='function')broadcastHelpers({t:'reset'});toast(captureBoardPhoto(bestPhotoCam())?'Empty board captured · photo saved':'Empty board captured');};
 $('#sBoard').onchange=e=>{S.boardStyle=e.target.value;persist();render();};
 $('#btnVoice').onclick=()=>{S.voice=!S.voice;persist();
   if(!S.voice){sayQ.length=0;try{speechSynthesis.cancel();}catch(e){}}$('#btnVoice').textContent=S.voice?'🔊':'🔇';toast(S.voice?'Caller on':'Caller off');};
@@ -90,8 +91,9 @@ window.addEventListener('resize',()=>render());
 let lastProc=0;
 function loop(t){
   requestAnimationFrame(loop);
-  if(SRC==='sim')SIM.render();
-  if(SRC!=='none'&&t-lastProc>=55){lastProc=t;const g=grabGray();if(g)detectStep(g);}
+  const sims=CAMS.filter(c=>c.kind==='sim');
+  if(sims.length){SIM.tick();for(const c of sims)SIM.render(SIM.view(c.simIndex));}
+  if(t-lastProc>=55){lastProc=t;for(const cam of CAMS){if(cam.state==='lost')continue;const g=grabGray(cam);if(g)detectStep(cam,g);}}
   drawPreview();if(calOpen)drawCal();
 }
 
@@ -99,4 +101,4 @@ function loop(t){
 $('#btnVoice').textContent=S.voice?'🔊':'🔇';
 document.body.classList.toggle('nocamview',!S.showCam);
 newGame(lastCfg);updatePill();requestAnimationFrame(loop);
-window.DE={SIM,D,CAL,get G(){return G},SIMLOG,startSource,setCal,hitAt,MODES,newGame,addDart,nextTurn,undo,mk};
+window.DE={SIM,SIM_VIEWS,CAMS,get CUR(){return CUR},FUSE,get G(){return G},SIMLOG,addCamera,removeCamera,selectCam,setCal,autoAlign,frameBoard,hitAt,MODES,newGame,addDart,nextTurn,undo,mk};

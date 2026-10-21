@@ -45,9 +45,21 @@ select,input[type=text]{background:var(--panel2);border:1px solid var(--line);bo
 .checkout .lbl{color:var(--muted);font-size:.7em;text-transform:uppercase;letter-spacing:1px}
 .chip{background:#2b2410;color:var(--gold);border:1px solid #5c4a1d;border-radius:10px;padding:4px 12px;font-weight:800}
 .side{display:flex;flex-direction:column;gap:10px;min-height:0}
-.cam{position:relative;background:#000;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);aspect-ratio:4/3}
-.cam canvas{width:100%;height:100%;display:block}
-.cam .nocam{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);text-align:center;padding:16px;font-size:14px}
+.camgrid{position:relative;display:grid;grid-template-columns:1fr;gap:6px;min-height:0}
+.camgrid.multi{grid-template-columns:1fr 1fr}
+.camgrid canvas{width:100%;aspect-ratio:4/3;display:block;background:#000;border-radius:var(--radius);border:1px solid var(--line);cursor:pointer}
+.camgrid .nocam{aspect-ratio:4/3;display:grid;place-items:center;color:var(--muted);text-align:center;padding:16px;font-size:14px;background:#000;border-radius:var(--radius);border:1px solid var(--line)}
+.camtabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.camtab{padding:7px 10px;font-size:13px;display:flex;align-items:center;gap:6px}
+.camtab.on{border-color:var(--accent);background:#123329}
+.camtab.lost{opacity:.5;text-decoration:line-through}
+.muted{color:var(--muted);font-size:13px}
+.qr{background:#fff;border-radius:12px;padding:10px;width:min(260px,70vw);aspect-ratio:1;margin:8px auto;display:grid;place-items:center;color:#333;font-size:14px;text-align:center}
+.qr svg{width:100%;height:100%}
+.pairlink{font-size:12px;color:var(--muted);word-break:break-all;text-align:center;-webkit-user-select:all;user-select:all}
+.hrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.helperbar{background:#13261f;border-bottom:1px solid #1d5c4a;color:#bff3e0;padding:10px 16px;font-size:15px}
+body.helper-mode .app,body.helper-mode #btnCalDone,body.helper-mode #btnPair{display:none}
 .det{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
 .dot{width:10px;height:10px;border-radius:50%;background:#445}
 .dot.ok{background:var(--accent)}.dot.mv{background:var(--gold)}.dot.bad{background:var(--hot)}
@@ -108,7 +120,7 @@ dialog{width:min(760px,94vw);max-height:92vh;overflow:auto}
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 #toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none;font-weight:600}
 #toast.show{opacity:1}
-body.nocamview .side .cam{display:none}
+body.nocamview .side .camgrid{display:none}
 @media (max-aspect-ratio:1/1){
   .stage{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1.2fr) auto}
   .boardwrap{grid-column:1/3}

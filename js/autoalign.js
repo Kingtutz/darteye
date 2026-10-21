@@ -3,9 +3,9 @@
 
 /* ---------- auto-align: find the board in the camera picture ---------- */
 // classes: 0 dark bed, 1 light bed, 2 red, 3 green
-function classifyFrame(W,H){
+function classifyFrame(cam,W,H){
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;
-  const cx=cv.getContext('2d',{willReadFrequently:true});drawSrc(cx,0,0,W,H);
+  const cx=cv.getContext('2d',{willReadFrequently:true});drawSrc(cam,cx,0,0,W,H);
   const d=cx.getImageData(0,0,W,H).data,n=W*H,cls=new Uint8Array(n),val=new Float32Array(n);
   for(let i=0,j=0;i<n;i++,j+=4){
     const r=d[j],g=d[j+1],b=d[j+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),c=mx-mn,v=mx/255,s=mx?c/mx:0;
@@ -82,11 +82,13 @@ function alignScore(pts,CM){
   return s;
 }
 function alignMax(){return sum(alignSamples().map(([, ,e])=>e===2||e===3?2:1));}
-async function autoAlign(quiet){
-  const[w,h]=srcSize();if(!w){if(!quiet)toast('Start a camera first');return false;}
+async function autoAlign(cam,quiet){
+  const[w,h]=srcSize(cam);if(!w){if(!quiet)toast('Start a camera first');return false;}
   const W=640,H=Math.round(640*h/w);
-  $('#calHint').innerHTML='Looking for the board…';await new Promise(r=>setTimeout(r,30));
-  const{cls,val}=classifyFrame(W,H),ring=findRing(cls,W,H);
+  if(cam===CUR)$('#calHint').innerHTML='Looking for the board…';
+  await new Promise(r=>setTimeout(r,30));
+  if(!CAMS.includes(cam))return false;
+  const{cls,val}=classifyFrame(cam,W,H),ring=findRing(cls,W,H);
   if(!ring){if(!quiet)toast('Couldn’t find the board: is it in view and well lit?');return false;}
   // split the remaining pixels inside the board into dark / light beds (Otsu threshold)
   const hist=new Float64Array(64);let tot=0;
@@ -107,7 +109,7 @@ async function autoAlign(quiet){
   // the colour pattern repeats every 36°: among equally good fits, put 20 where it was last time
   // (remembered per camera, including any ⟲/⟳ correction), or nearest the top of the picture the first time
   const dir20=p=>{const Hm=homog(CAL_MM,p),[x0,y0]=applyH(Hm,0,0),[x1,y1]=applyH(Hm,0,170);return Math.atan2(x1-x0,-(y1-y0));};
-  const ref=(CALS.up||{})[SRC]||0,off=a=>Math.abs(Math.atan2(Math.sin(a-ref),Math.cos(a-ref)));
+  const ref=(CALS.up||{})[cam.key]||0,off=a=>Math.abs(Math.atan2(Math.sin(a-ref),Math.cos(a-ref)));
   const good=cands.filter(c=>c.s>=top*.93).sort((a,b)=>off(dir20(a.p))-off(dir20(b.p)));
   let pts=good[0].p,sc=alignScore(pts,CM);
   for(const step of[8,4,2,1,.5,.25,.12]){
@@ -120,12 +122,13 @@ async function autoAlign(quiet){
   }
   const conf=sc/alignMax();
   if(conf<.55){if(!quiet)toast(`Board found, but the fit is weak (${Math.round(conf*100)}%) – tap the 4 points instead`);return false;}
-  setCal(pts.map(([x,y])=>[x/W,y/H]));
-  toast(`Auto-aligned ✓ (${Math.round(conf*100)}% match)`);
+  setCal(cam,pts.map(([x,y])=>[x/W,y/H]));
+  setDet(cam,'ready','Ready · throw!');
+  toast(`${CAMS.length>1?`Camera ${CAMS.indexOf(cam)+1} a`:'A'}uto-aligned ✓ (${Math.round(conf*100)}% match)`);
   return true;
 }
 // turn the numbering by two segments (the colour pattern can't tell these apart)
-function rotateCal(dir){
-  if(!CAL.Hinv)return;const a=rad(36*dir),c=Math.cos(a),s=Math.sin(a);
-  setCal(CAL_MM.map(([x,y])=>applyH(CAL.Hinv,x*c+y*s,-x*s+y*c)));
+function rotateCal(cam,dir){
+  if(!cam||!cam.cal.Hinv)return;const a=rad(36*dir),c=Math.cos(a),s=Math.sin(a);
+  setCal(cam,CAL_MM.map(([x,y])=>applyH(cam.cal.Hinv,x*c+y*s,-x*s+y*c)));
 }

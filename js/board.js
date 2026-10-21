@@ -137,16 +137,4 @@ function applyH(H,x,y){const w=H[6]*x+H[7]*y+H[8];return[(H[0]*x+H[1]*y+H[2])/w,
 // calibration targets: outer double edge on the 20|1, 6|10, 3|19, 11|14 wires
 const CAL_MM=[9,99,189,279].map(a=>[R.DO*Math.sin(rad(a)),R.DO*Math.cos(rad(a))]);
 const CAL_NAMES=['where 20 meets 1 (top)','where 6 meets 10 (right)','where 3 meets 19 (bottom)','where 11 meets 14 (left)'];
-const CAL={pts:[],H:null,Hinv:null};
-function setCal(pts){
-  CAL.pts=pts;
-  if(pts.length===4){CAL.H=homog(pts,CAL_MM);CAL.Hinv=homog(CAL_MM,pts);if(!CAL.H||!CAL.Hinv)CAL.H=CAL.Hinv=null;}
-  else CAL.H=CAL.Hinv=null;
-  if(SRC!=='none'){
-    CALS[SRC]=pts;
-    const[fw,fh]=srcSize();
-    if(CAL.Hinv&&fw){const[x0,y0]=applyH(CAL.Hinv,0,0),[x1,y1]=applyH(CAL.Hinv,0,170);CALS.up=Object.assign({},CALS.up,{[SRC]:Math.atan2((x1-x0)*fw,-(y1-y0)*fh)});}
-    persist();
-  }
-  D.roi=null;resetDetector();
-}
+// each camera keeps its own calibration: see setCal() in camera.js

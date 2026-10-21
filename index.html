@@ -29,8 +29,7 @@
       <div class="checkout" id="checkout"></div>
     </section>
     <aside class="side">
-      <div class="cam">
-        <canvas id="preview" width="640" height="480"></canvas>
+      <div class="camgrid" id="camGrid">
         <div class="nocam" id="nocam">No camera. Tap the board to score by hand,<br>or open 📷 Camera to start auto-scoring.</div>
       </div>
       <div class="det"><span class="dot" id="detDot"></span><span id="detText">Manual scoring</span></div>
@@ -63,10 +62,14 @@
 
 <!-- Camera + calibration -->
 <div class="overlay" id="calView" hidden>
+  <div class="helperbar" id="helperBar" hidden>📱 <b>Helper camera for DartEye</b> · <span id="helperStatus"></span></div>
   <div class="calbar">
-    <strong>Camera &amp; calibration</strong>
+    <strong>Cameras</strong>
+    <div class="camtabs" id="camTabs"></div>
     <select id="srcSel"></select>
-    <button id="btnStartSrc">Start</button>
+    <button id="btnAddCam">+ Add camera</button>
+    <button id="btnRemoveCam" class="danger" hidden>Remove</button>
+    <button id="btnPair">📱 Phone camera</button>
     <span class="spacer"></span>
     <button id="btnAuto" class="primary">✨ Auto-align</button>
     <button id="btnRotL" title="Turn the numbers two segments anticlockwise">⟲ 20</button>
@@ -141,8 +144,16 @@
     </div>
   </div>
 </div>
+<dialog id="dlgPair">
+  <h2>📱 Add a phone as a camera</h2>
+  <p class="muted">On the phone, scan this code with the Camera app (or open the link). Stand the phone so it looks at the board from a different side than your other cameras. Then press <b>✨ Auto-align</b> on the phone. Both devices must be on the same Wi-Fi.</p>
+  <div class="qr" id="pairQr"></div>
+  <p class="pairlink" id="pairLink"></p>
+  <div id="helperList"></div>
+  <form method="dialog" class="row" style="justify-content:flex-end"><button class="primary">Done</button></form>
+</dialog>
 <div id="toast"></div>
-<video id="video" playsinline muted autoplay style="display:none"></video>
+<div id="videos" hidden></div>
 
 <!-- Classic scripts share one global scope and run in this order: keep it. -->
 <script src="js/util.js"></script>
@@ -151,6 +162,7 @@
 <script src="js/camera.js"></script>
 <script src="js/autoalign.js"></script>
 <script src="js/detection.js"></script>
+<script src="js/fusion.js"></script>
 <script src="js/checkout.js"></script>
 <script src="js/games.js"></script>
 <script src="js/sprites.js"></script>
@@ -159,5 +171,6 @@
 <script src="js/render.js"></script>
 <script src="js/calibration-ui.js"></script>
 <script src="js/app.js"></script>
+<script src="js/helper.js"></script>
 </body>
 </html>
