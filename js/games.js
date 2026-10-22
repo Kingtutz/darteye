@@ -35,7 +35,7 @@ x01:{name:'X01',icon:'🎯',group:'Classic',desc:'301 / 501 / 701, first to exac
   opts:[{k:'start',label:'Start score',ch:[[301,'301'],[501,'501'],[701,'701']],def:501},
         {k:'out',label:'Finish',ch:[['double','Double out'],['single','Straight out']],def:'double'},
         {k:'in',label:'Begin',ch:[['single','Straight in'],['double','Double in']],def:'single'}],
-  label:g=>`${g.o.start} · ${g.o.out==='double'?'double out':'straight out'}${g.o.in==='double'?' · double in':''}`,
+  label:g=>`${g.o.start} | ${g.o.in==='double'?'DI':'SI'}-${g.o.out==='double'?'DO':'SO'}`, // e.g. 501 | SI-DO
   init(g){g.players.forEach(p=>{p.score=g.o.start;p.opened=g.o.in!=='double';});},
   start(g,p){g.turn.startScore=p.score;g.turn.startOpened=p.opened;},
   apply(g,p,h){

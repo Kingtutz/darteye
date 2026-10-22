@@ -6,28 +6,36 @@ function render(){renderPlayers();renderTurn();drawBoardView();renderHint();}
 function tScore(g){const M=MODE(g);return M.turnScore?M.turnScore(g):sum(g.turn.darts.map(h=>h.value));}
 function tText(g){const M=MODE(g);return g.turn.bust?'BUST':M.turnText?M.turnText(g):tScore(g);}
 function peekNext(g){const n=g.players.length;for(let k=1;k<=n;k++){const p=g.players[(g.cur+k)%n];if(!p.out&&!p.done)return p;}return null;}
+// the player whose turn it is gets the big brown card; everyone else, in throwing order, sits on the grey panel
 function renderPlayers(){
-  const M=MODE(G),el=$('#players');
-  el.classList.toggle('many',G.players.length>3);
-  el.innerHTML=G.players.map((p,i)=>{
-    const last=p.turns.length?p.turns[p.turns.length-1]:'–';
-    const st=(M.stats?M.stats(G,p):[]).concat([['Last',last],['Darts',p.darts]]);
-    return `<div class="pcard ${i===G.cur&&!G.result?'active':''} ${p.out||p.done?'out':''}">
-      <div class="pname"><span>${esc(p.name)}</span>${p.legs?`<span class="legs">${p.legs} win${p.legs>1?'s':''}</span>`:''}</div>
-      <div class="pscore">${M.big(G,p)}</div>${M.sub?M.sub(G,p,i):''}
-      <div class="pstats">${st.map(([k,v])=>`<span>${k} <b>${v}</b></span>`).join('')}</div>
-    </div>`;}).join('');
-  const a=el.querySelector('.active');if(a&&a.scrollIntoView)a.scrollIntoView({block:'nearest'});
+  const M=MODE(G),el=$('#players'),n=G.players.length,act=G.result&&G.winner>=0?G.winner:G.cur,p=G.players[act];
+  const last=p.turns.length?p.turns[p.turns.length-1]:'–',st=(M.stats?M.stats(G,p):[])[0]||['Darts',p.darts];
+  const prev=G.mode==='x01'&&!G.result&&G.turn.darts.length&&G.turn.startScore!==p.score?G.turn.startScore:'';
+  const rest=[...Array(n-1)].map((_,k)=>G.players[(act+1+k)%n]);
+  const badge=q=>q.legs?`<span class="badge">${q.legs} W</span>`:'';
+  el.classList.toggle('solo',n===1);
+  el.innerHTML=`<div class="pc ${p.out||p.done?'out':''} ${M.sub&&M.sub(G,p,act)?'hasSub':''}">
+      <div class="ph"><span class="avatar">${esc(initials(p.name)||'?')}</span><span class="pname">${esc(p.name)}</span>${badge(p)}</div>
+      <div class="prev">${prev}</div>
+      <div class="stats"><div><small>Last score:</small><b>${last}</b></div><div><small>${st[0]}:</small><b>${st[1]}</b></div></div>
+      <div class="big">${M.big(G,p)}</div>
+      ${M.sub?`<div class="psubs">${M.sub(G,p,act)}</div>`:''}
+    </div>
+    ${rest.length?`<div class="others ${rest.length>2?'many':''}">${rest.map(o=>`<div class="po ${o.out||o.done?'out':''}">
+      <div class="pn"><span>${esc(o.name)}</span>${badge(o)}</div><b>${M.big(G,o)}</b></div>`).join('')}</div>`:''}`;
 }
 function renderTurn(){
-  const d=G.turn.darts;
+  const d=G.turn.darts,over=turnOver(G);
   $$('.slot').forEach((el,i)=>{const h=d[i];
-    el.classList.toggle('sel',sel===i);el.classList.toggle('filled',!!h);el.classList.toggle('auto',!!(h&&h.auto));
-    el.innerHTML=h?`<b>${h.bo?'B/O':h.label}</b><small>${h.value}</small>`:'<b>–</b><small>&nbsp;</small>';});
+    el.classList.toggle('sel',sel===i);el.classList.toggle('empty',!h);
+    el.textContent=h?(h.bo?'B/O':h.label):'';
+    el.title=h?'Tap to correct this dart':i===d.length&&!over?'Tap to record a miss':'';});
   const tt=$('#turnTotal');tt.textContent=tText(G);tt.className='ttotal'+(G.turn.bust?' bust':'');
-  const over=turnOver(G)&&!G.result;
-  $('#turnMsg').textContent=sel!==null?`Tap the board where dart ${sel+1} really landed (or press Miss)`:over?'Pull your darts, then Next ▶':'';
-  $('#btnNext').classList.toggle('pulse',over);
+  const next=peekNext(G),btn=$('#btnNext');
+  $('#turnMsg').textContent=G.result?'Game over':sel!==null?`Tap the board where dart ${sel+1} landed`
+    :over?(next&&n2(next)?`Pull darts · ${next.name} next ▶`:'Pull darts · Next ▶'):`${cur(G).name}'s turn`;
+  btn.classList.toggle('ready',over&&!G.result);
+  function n2(q){return G.players.length>1&&q!==cur(G);}
 }
 let BV={cx:0,cy:0,sc:1};
 function drawBoardView(){
@@ -40,17 +48,18 @@ function drawBoardView(){
   const M=MODE(G),tg=G.result?[]:(M.targets?M.targets(G):[]);
   for(const t of tg){
     targetPath(c,t);
-    c.strokeStyle='#ffc24b';c.lineWidth=tg.length>3?2:3.2;c.shadowColor='#ffc24b';c.shadowBlur=tg.length>3?6:12;c.stroke();c.shadowBlur=0;
-    c.fillStyle='rgba(255,194,75,.14)';c.fill();
+    c.strokeStyle='#f58220';c.lineWidth=tg.length>3?2:3.2;c.shadowColor='#f58220';c.shadowBlur=tg.length>3?6:12;c.stroke();c.shadowBlur=0;
+    c.fillStyle='rgba(245,130,32,.16)';c.fill();
   }
   if(M.draw)M.draw(c,G);
-  G.turn.darts.forEach((d,i)=>{if(d.pos)drawDartMarker(c,d.pos.x,-d.pos.y,i+1,sel===i?'#ffc24b':d.auto?'#16c0e8':'#ff4d5e',sel===i);});
+  // darts lean up and back towards the viewer, so a lower dart's flight covers the darts above it: draw top first
+  G.turn.darts.map((d,i)=>({d,i})).filter(o=>o.d.pos).sort((a,b)=>b.d.pos.y-a.d.pos.y)
+    .forEach(({d,i})=>drawDartMarker(c,d.pos.x,-d.pos.y,i+1,sel===i,sel!==null));
 }
 function renderHint(){
   const el=$('#checkout'),M=MODE(G);
   if(G.result){el.innerHTML='';return;}
-  if(turnOver(G)){const n=peekNext(G);el.innerHTML=n&&G.players.length>1?`${lbl('Up next')} <b>${esc(n.name)}</b>`:lbl('Pull your darts');return;}
-  el.innerHTML=M.hint?M.hint(G):'';
+  el.innerHTML=turnOver(G)?'':M.hint?M.hint(G):''; // "who's next" now lives on the bottom bar
 }
 function logTurn(){
   const p=cur(G);

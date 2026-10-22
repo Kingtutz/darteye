@@ -6,58 +6,68 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>DartEye Scorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Dart<i>Eye</i></div>
-    <div class="mode" id="modeLabel"></div>
-    <div class="spacer"></div>
-    <span class="pill" id="camPill">Camera off</span>
-    <button id="btnCam">📷 Camera</button>
-    <button id="btnNew">New game</button>
-    <button id="btnVoice" title="Caller voice">🔊</button>
-    <button id="btnView" title="Show/hide camera view">◧</button>
-    <button id="btnFull" title="Fullscreen">⛶</button>
+    <button class="icon" id="btnNew" title="New game" aria-label="New game">
+      <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /><path d="M8 12h12" /></svg></button>
+    <div class="title" id="modeLabel"></div>
+    <button class="icon cambtn" id="btnCam" title="Cameras" aria-label="Cameras">
+      <svg viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="13" height="11" rx="2" /><path d="M15.5 10.5l6-3.5v10l-6-3.5z" /></svg>
+      <span class="camdot" id="camDot"></span></button>
+    <button class="icon" id="btnMenu" title="More" aria-label="More">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="12" cy="19" r="1.6" /></svg></button>
   </header>
 
-  <main class="stage">
-    <section class="players" id="players"></section>
-    <section class="boardwrap">
-      <canvas id="board"></canvas>
-      <div class="checkout" id="checkout"></div>
-    </section>
-    <aside class="side">
-      <div class="camgrid" id="camGrid">
-        <div class="nocam" id="nocam">No camera. Tap the board to score by hand,<br>or open 📷 Camera to start auto-scoring.</div>
-      </div>
-      <div class="det"><span class="dot" id="detDot"></span><span id="detText">Manual scoring</span></div>
-      <div class="simctl" id="simCtl" hidden>
-        <button data-sim="t20">Sim: throw T20</button>
-        <button data-sim="rand">Sim: random</button>
-        <button data-sim="bo">Sim: bounce-out</button>
-        <button data-sim="pull">Sim: pull darts</button>
-      </div>
-      <div class="log" id="log"></div>
-    </aside>
-  </main>
+  <section class="score" id="players"></section>
 
-  <footer class="turnbar">
-    <div class="slots">
-      <button class="slot" data-i="0"></button>
-      <button class="slot" data-i="1"></button>
-      <button class="slot" data-i="2"></button>
-    </div>
+  <section class="turnrow">
     <div class="ttotal" id="turnTotal">0</div>
-    <div class="tmsg" id="turnMsg"></div>
-    <div class="actions">
-      <button id="btnMiss">Miss</button>
-      <button id="btnBounce">Bounce-out</button>
-      <button id="btnUndo">↶ Undo</button>
-      <button id="btnNext" class="primary">Next ▶</button>
+    <button class="slot" data-i="0"></button>
+    <button class="slot" data-i="1"></button>
+    <button class="slot" data-i="2"></button>
+  </section>
+
+  <section class="boardwrap">
+    <canvas id="board"></canvas>
+    <div class="checkout" id="checkout"></div>
+  </section>
+
+  <aside class="side">
+    <div class="camgrid" id="camGrid">
+      <div class="nocam" id="nocam">No camera: tap the board to score by hand, or open the camera button to start auto-scoring.</div>
     </div>
+    <div class="det"><span class="dot" id="detDot"></span><span id="detText">Manual scoring</span></div>
+    <div class="simctl" id="simCtl" hidden>
+      <button data-sim="t20">Sim: throw T20</button>
+      <button data-sim="rand">Sim: random</button>
+      <button data-sim="bo">Sim: bounce-out</button>
+      <button data-sim="pull">Sim: pull darts</button>
+    </div>
+    <div class="log" id="log"></div>
+  </aside>
+
+  <footer class="bottombar">
+    <button class="undo" id="btnUndo" title="Undo" aria-label="Undo">
+      <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 010 11H11" /></svg></button>
+    <button class="next" id="btnNext"><span id="turnMsg"></span></button>
   </footer>
+</div>
+
+<div class="menu" id="menu" hidden>
+  <div class="menustatus"><span class="pill" id="camPill">Camera off</span></div>
+  <button id="btnNew2">New game</button>
+  <button id="btnMiss">Miss</button>
+  <button id="btnBounce">Bounce-out</button>
+  <button id="btnVoice">Caller voice</button>
+  <button id="btnView">Camera previews</button>
+  <button id="btnHistory">Visit history</button>
+  <button id="btnFull">Full screen</button>
 </div>
 
 <!-- Camera + calibration -->

@@ -21,7 +21,8 @@ function hitAt(x,y){
 const rad=d=>d*Math.PI/180;
 // draw board in "canvas mm": board point (x, yUp) lives at (x, -yUp)
 const TAU=Math.PI*2;
-// Realistic board, rendered once per size into an offscreen texture (sisal grain, metal spider, silver numbers, lighting)
+// The board, rendered once per size into an offscreen texture: bright beds with a light fibre grain, a thin
+// spider, white numbers that follow the ring, and the metal brackets on the rim
 const TEX={};
 function boardTex(px){
   px=Math.max(256,Math.min(2048,Math.round(px/64)*64));
@@ -30,11 +31,11 @@ function boardTex(px){
   const cv=document.createElement('canvas');cv.width=cv.height=px;
   const c=cv.getContext('2d'),s=px/460;
   c.setTransform(s,0,0,s,px/2,px/2);
-  // black surround with a soft bevel at the rim
-  let g=c.createRadialGradient(-50,-70,30,0,0,230);g.addColorStop(0,'#262626');g.addColorStop(.75,'#141414');g.addColorStop(1,'#060606');
+  // black number ring with a soft bevel at the rim
+  let g=c.createRadialGradient(-40,-60,40,0,0,230);g.addColorStop(0,'#1d1d1d');g.addColorStop(.8,'#121212');g.addColorStop(1,'#070707');
   c.fillStyle=g;c.beginPath();c.arc(0,0,229.5,0,TAU);c.fill();
   // playing area beds
-  const dark='#1e1d1b',light='#ecdfbd',red='#cc1f2a',green='#13874a';
+  const dark='#151515',light='#f2e6c6',red='#e1222b',green='#16a64c';
   const wedge=(r0,r1,a0,a1,col)=>{c.beginPath();c.arc(0,0,r1,a0,a1);c.arc(0,0,r0,a1,a0,true);c.closePath();c.fillStyle=col;c.fill();};
   for(let i=0;i<20;i++){
     const a0=rad(i*18-9-90)-.002,a1=rad(i*18+9-90)+.002,ev=i%2===0,sg=ev?dark:light,ring=ev?red:green;
@@ -48,30 +49,28 @@ function boardTex(px){
     for(const r of [R.DB,R.SB,R.TI,R.TO,R.DI,R.DO]){c.beginPath();c.arc(0,0,r,0,TAU);c.stroke();}
     for(let i=0;i<20;i++){const a=rad(i*18+9);c.beginPath();c.moveTo(R.SB*Math.sin(a),-R.SB*Math.cos(a));c.lineTo(R.DO*Math.sin(a),-R.DO*Math.cos(a));c.stroke();}
   };
-  c.save();c.translate(.55,.75);c.strokeStyle='rgba(0,0,0,.55)';c.lineWidth=1.25;spider();c.restore();
-  g=c.createLinearGradient(-170,-170,170,170);
-  g.addColorStop(0,'#f7f9fb');g.addColorStop(.35,'#b4bac0');g.addColorStop(.6,'#e8ebee');g.addColorStop(1,'#80868d');
-  c.strokeStyle=g;c.lineWidth=.95;spider();
-  c.save();c.translate(-.18,-.24);c.strokeStyle='rgba(255,255,255,.55)';c.lineWidth=.3;spider();c.restore();
-  // outer wire ring that carries the numbers
-  c.strokeStyle=g;c.lineWidth=1.1;c.beginPath();c.arc(0,0,182,0,TAU);c.stroke();
-  // silver numbers with a drop shadow
-  c.font='900 23px "Arial Black","Helvetica Neue",Arial,sans-serif';c.textAlign='center';c.textBaseline='middle';
+  c.save();c.translate(.35,.5);c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=.9;spider();c.restore();
+  c.strokeStyle='#e9dcb4';c.lineWidth=.6;spider();
+  // white numbers that follow the ring; the lower half is turned the other way so it still reads upright
+  c.font=`600 30px ${getComputedStyle(document.documentElement).getPropertyValue('--num')||'sans-serif'}`;
+  c.textAlign='center';c.textBaseline='middle';c.fillStyle='#fff';
   for(let i=0;i<20;i++){
-    const a=rad(i*18),x=200*Math.sin(a),y=-200*Math.cos(a);
-    c.fillStyle='rgba(0,0,0,.75)';c.fillText(SEGS[i],x+.9,y+1.2);
-    const ng=c.createLinearGradient(x,y-11,x,y+11);ng.addColorStop(0,'#ffffff');ng.addColorStop(.5,'#c9ced3');ng.addColorStop(.55,'#9aa1a8');ng.addColorStop(1,'#e9ecef');
-    c.fillStyle=ng;c.fillText(SEGS[i],x,y);
+    const deg=i*18,a=rad(deg),rot=deg>90&&deg<270?deg-180:deg;
+    c.save();c.translate(200*Math.sin(a),-200*Math.cos(a));c.rotate(rad(rot));c.fillText(SEGS[i],0,1);c.restore();
   }
-  // studio lighting: warm key light top-left, vignette to the rim
+  // metal brackets that hold the number ring, like a real board
+  for(const deg of[45,135,225,315]){
+    const a=rad(deg),x=214*Math.sin(a),y=-214*Math.cos(a);
+    const bg=c.createRadialGradient(x-1.5,y-1.5,.5,x,y,6);bg.addColorStop(0,'#d9dde0');bg.addColorStop(.6,'#8a9096');bg.addColorStop(1,'#4b5055');
+    c.fillStyle=bg;c.beginPath();c.arc(x,y,5.5,0,TAU);c.fill();
+    c.strokeStyle='#3a3e42';c.lineWidth=.8;c.beginPath();c.moveTo(x-2.5,y);c.lineTo(x+2.5,y);c.stroke();
+  }
+  // gentle light from the top-left, and a crisp rim
   c.save();c.beginPath();c.arc(0,0,229.5,0,TAU);c.clip();
-  g=c.createRadialGradient(-90,-120,0,-90,-120,300);g.addColorStop(0,'rgba(255,248,230,.14)');g.addColorStop(1,'rgba(255,248,230,0)');
-  c.fillStyle=g;c.fillRect(-230,-230,460,460);
-  g=c.createRadialGradient(0,0,150,0,0,230);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.45)');
+  g=c.createRadialGradient(-90,-120,0,-90,-120,320);g.addColorStop(0,'rgba(255,255,255,.07)');g.addColorStop(1,'rgba(255,255,255,0)');
   c.fillStyle=g;c.fillRect(-230,-230,460,460);
   c.restore();
-  g=c.createLinearGradient(-230,-230,230,230);g.addColorStop(0,'rgba(255,255,255,.18)');g.addColorStop(1,'rgba(0,0,0,.6)');
-  c.strokeStyle=g;c.lineWidth=2;c.beginPath();c.arc(0,0,228.5,0,TAU);c.stroke();
+  c.strokeStyle='rgba(255,255,255,.22)';c.lineWidth=1.2;c.beginPath();c.arc(0,0,228.6,0,TAU);c.stroke();
   return TEX[px]=cv;
 }
 // fibre grain: fine per-pixel speckle plus low-frequency mottling, only inside the scoring area
@@ -87,7 +86,7 @@ function sisalGrain(c,px,s){
       const gx=x/cell,x0=gx|0,fx=gx-x0,k=y0*gw+x0;
       const m=(grid[k]*(1-fx)+grid[k+1]*fx)*(1-fy)+(grid[k+gw]*(1-fx)+grid[k+gw+1]*fx)*fy;
       const j=(y*px+x)*4,lum=d[j]+d[j+1]+d[j+2];
-      const n=(rr()-.5)*(lum>360?34:24)+m*20;
+      const n=(rr()-.5)*(lum>360?16:12)+m*8;
       d[j]=Math.max(0,Math.min(255,d[j]+n));d[j+1]=Math.max(0,Math.min(255,d[j+1]+n));d[j+2]=Math.max(0,Math.min(255,d[j+2]+n*.9));
     }
   }

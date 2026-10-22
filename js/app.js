@@ -10,7 +10,12 @@ $('#board').addEventListener('pointerdown',e=>{
   if(Math.hypot(x,y)>228)return;
   addDart(Object.assign(hitAt(x,y),{pos:{x,y}}),false);
 });
-$$('.slot').forEach(el=>el.onclick=()=>{const i=+el.dataset.i;if(i>=G.turn.darts.length)return;sel=sel===i?null:i;render();});
+// tap a dart tile to correct it; tap the next empty tile to record a miss
+$$('.slot').forEach(el=>el.onclick=()=>{
+  const i=+el.dataset.i,n=G.turn.darts.length;
+  if(i<n){sel=sel===i?null:i;render();}
+  else if(i===n&&!turnOver(G))addDart(mk(0,0),false);
+});
 $('#btnMiss').onclick=()=>addDart(mk(0,0),false);
 $('#btnBounce').onclick=()=>addDart(Object.assign(mk(0,0),{bo:true}),false);
 $('#btnUndo').onclick=undo;
@@ -26,8 +31,20 @@ $('#btnRotR').onclick=()=>rotateCal(CUR,-1);
 $('#btnEmpty').onclick=()=>{CAMS.forEach(resetDetector);if(typeof broadcastHelpers==='function')broadcastHelpers({t:'reset'});toast(captureBoardPhoto(bestPhotoCam())?'Empty board captured · photo saved':'Empty board captured');};
 $('#sBoard').onchange=e=>{S.boardStyle=e.target.value;persist();render();};
 $('#btnVoice').onclick=()=>{S.voice=!S.voice;persist();
-  if(!S.voice){sayQ.length=0;try{speechSynthesis.cancel();}catch(e){}}$('#btnVoice').textContent=S.voice?'🔊':'🔇';toast(S.voice?'Caller on':'Caller off');};
-$('#btnView').onclick=()=>{S.showCam=!S.showCam;persist();document.body.classList.toggle('nocamview',!S.showCam);setTimeout(render,50);};
+  if(!S.voice){sayQ.length=0;try{speechSynthesis.cancel();}catch(e){}}syncMenu();toast(S.voice?'Caller on':'Caller off');};
+$('#btnView').onclick=()=>{S.showCam=!S.showCam;persist();syncMenu();setTimeout(render,50);};
+$('#btnHistory').onclick=()=>{document.body.classList.toggle('showlog');syncMenu();};
+$('#btnNew2').onclick=()=>openNew();
+// the ⋮ menu: closes on any choice or a tap elsewhere
+const menu=$('#menu');
+function syncMenu(){
+  $('#btnVoice').classList.toggle('on',S.voice);$('#btnView').classList.toggle('on',S.showCam);
+  $('#btnHistory').classList.toggle('on',document.body.classList.contains('showlog'));
+  document.body.classList.toggle('nocamview',!S.showCam);
+}
+$('#btnMenu').onclick=e=>{e.stopPropagation();menu.hidden=!menu.hidden;};
+menu.addEventListener('click',e=>{if(e.target.closest('button'))menu.hidden=true;});
+document.addEventListener('pointerdown',e=>{if(!menu.hidden&&!menu.contains(e.target)&&!$('#btnMenu').contains(e.target))menu.hidden=true;});
 $('#btnFull').onclick=()=>{const el=document.documentElement;try{if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document);else(el.requestFullscreen||el.webkitRequestFullscreen).call(el);}catch(e){toast('Use Share → Add to Home Screen for full screen');}};
 $('#btnRematch').onclick=rematch;
 $('#btnWinUndo').onclick=undo;
@@ -98,7 +115,8 @@ function loop(t){
 }
 
 /* ---------- boot ---------- */
-$('#btnVoice').textContent=S.voice?'🔊':'🔇';
-document.body.classList.toggle('nocamview',!S.showCam);
+syncMenu();
 newGame(lastCfg);updatePill();requestAnimationFrame(loop);
+// the board's numbers use the condensed web font: redraw once it has arrived
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{for(const k in TEX)delete TEX[k];render();});
 window.DE={SIM,SIM_VIEWS,CAMS,get CUR(){return CUR},FUSE,get G(){return G},SIMLOG,addCamera,removeCamera,selectCam,setCal,autoAlign,frameBoard,hitAt,MODES,newGame,addDart,nextTurn,undo,mk};

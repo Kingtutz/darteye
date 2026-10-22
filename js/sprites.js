@@ -116,20 +116,34 @@ function hpBadge(c,x,y,n){
   c.beginPath();c.arc(x,y,6.5,0,TAU);c.fillStyle='#ffc24b';c.fill();c.lineWidth=1;c.strokeStyle='#5a3a06';c.stroke();
   c.font='900 9px system-ui';c.fillStyle='#000';c.textAlign='center';c.textBaseline='middle';c.fillText(n,x,y+.5);
 }
-// a dart seen front-on: four flights in an X around the barrel, with a shadow on the board
-function drawDartMarker(c,x,y,n,col,selected){
-  c.save();c.translate(x,y);
-  softShadow(c,2.2,2.8,8,7);
-  if(selected)glow(c,0,0,16,'rgba(255,194,75,.7)');
-  for(let i=0;i<4;i++){
-    c.save();c.rotate(Math.PI/4+i*Math.PI/2);
-    const g=c.createLinearGradient(0,0,11,0);g.addColorStop(0,col);g.addColorStop(1,'rgba(255,255,255,.85)');
-    c.fillStyle=g;c.beginPath();c.moveTo(1.2,-1);c.lineTo(10.5,-3.4);c.lineTo(11.5,0);c.lineTo(10.5,3.4);c.lineTo(1.2,1);c.closePath();c.fill();
-    c.lineWidth=.45;c.strokeStyle='rgba(0,0,0,.6)';c.stroke();c.restore();
+// a dart stuck in the board, seen from the front: it leans up and to the left towards the viewer, with its
+// shadow falling on the board. The steel point sits exactly on the hit (0,0).
+function drawDartMarker(c,x,y,n,selected,showNum){
+  const ux=-.42,uy=-.91,px=-uy,py=ux;          // along the dart (towards the flight), and across it
+  const P=(t,s=0)=>[ux*t+px*s,uy*t+py*s];
+  const quad=(pts,fill)=>{c.beginPath();pts.forEach((q,k)=>k?c.lineTo(...q):c.moveTo(...q));c.closePath();c.fillStyle=fill;c.fill();};
+  const seg=(t0,t1,w,col)=>{c.strokeStyle=col;c.lineWidth=w;c.lineCap='round';c.beginPath();c.moveTo(...P(t0));c.lineTo(...P(t1));c.stroke();};
+  c.save();c.translate(x,y);c.scale(1.35,1.35); // about a quarter of the board long, like a real dart
+  if(selected)glow(c,0,0,12,'rgba(245,130,32,.75)');
+  // shadow on the board, cast down and to the right
+  c.save();c.translate(5,6);c.globalAlpha=.32;
+  seg(4,32,4,'#000');quad([P(36,0),P(44,-8),P(60,-9),P(60,9),P(44,8)],'#000');
+  c.restore();
+  seg(0,10,1.3,'#c9ced3');                     // steel point
+  const bg=c.createLinearGradient(...P(10,-2),...P(10,2));bg.addColorStop(0,'#9aa0a6');bg.addColorStop(.45,'#4a4f55');bg.addColorStop(1,'#1f2226');
+  seg(10,30,4.2,bg);                           // tungsten barrel
+  for(const t of[13,15.5,18])seg(t,t+.6,4.4,'#14171a'); // grip rings
+  seg(23,25,4.4,'#f58220');                    // orange band
+  seg(30,40,2,'#111');                         // shaft
+  // flights: two wings seen at an angle, black with orange trim
+  quad([P(36,0),P(43,-7.5),P(58,-8.5),P(58,0)],'#111');
+  quad([P(36,0),P(43,7.5),P(58,8.5),P(58,0)],'#1b1b1b');
+  quad([P(43,-7.5),P(58,-8.5),P(58,-6.8),P(44.5,-6)],'#f58220');
+  quad([P(43,7.5),P(58,8.5),P(58,6.8),P(44.5,6)],'#f58220');
+  c.strokeStyle='rgba(255,255,255,.25)';c.lineWidth=.4;c.beginPath();c.moveTo(...P(36,0));c.lineTo(...P(58,0));c.stroke();
+  if(showNum){ // while correcting, number the darts so you can see which tile is which
+    const[bx,by]=P(62,0);c.beginPath();c.arc(bx,by,5.5,0,TAU);c.fillStyle=selected?'#f58220':'rgba(0,0,0,.85)';c.fill();
+    c.fillStyle='#fff';c.font='700 8px "Barlow Condensed",sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(n,bx,by+.5);
   }
-  const g=c.createRadialGradient(-.8,-.8,.2,0,0,3);g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#9ea4aa');g.addColorStop(1,'#3a3f44');
-  c.fillStyle=g;c.beginPath();c.arc(0,0,2.8,0,TAU);c.fill();
-  c.beginPath();c.arc(10,-10,5,0,TAU);c.fillStyle='rgba(10,14,19,.9)';c.fill();c.lineWidth=.8;c.strokeStyle=col;c.stroke();
-  c.fillStyle='#fff';c.font='900 7px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(n,10,-9.6);
   c.restore();
 }

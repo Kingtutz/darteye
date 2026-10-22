@@ -165,5 +165,6 @@ function updatePill(){
   else if(!ok){p.textContent=(n>1?`${n} cameras`:'Camera')+' · not calibrated';p.className='pill warn';}
   else{p.textContent=(ok>1?`${ok} cameras`:'Camera')+' · auto-scoring';p.className='pill ok';}
   $('#nocam').hidden=CAMS.length>0;
+  $('#btnCam').dataset.state=!n?'off':ok?'ok':'warn'; // status dot on the camera button
   renderCamTabs();
 }
