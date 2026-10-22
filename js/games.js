@@ -26,7 +26,6 @@ function x01hit(g,p,key,h,dout){
   p[key]=ns;return ns===0?'out':null;
 }
 const coFor=(g,v,dout)=>turnOver(g)?null:checkout(v,3-g.turn.darts.length,dout);
-const coHint=co=>co?`${lbl('Checkout')} ${co.map(h=>chip(h.label)).join('')}`:'';
 function randCo(g){for(;;){const n=2+Math.floor(rnd(g)*169);if(checkout(n,3,true))return n;}}
 
 const MODES={
@@ -48,8 +47,9 @@ x01:{name:'X01',icon:'🎯',group:'Classic',desc:'301 / 501 / 701, first to exac
   big:(g,p)=>p.score,
   sub:(g,p)=>p.opened?'':'<div class="psub">Needs a double to start</div>',
   stats:(g,p)=>[['Avg',x01avg(g,p)]],
-  hint:g=>cur(g).opened?coHint(coFor(g,cur(g).score,g.o.out==='double')):`${lbl('Start on')} ${chip('any double')}`,
-  targets(g){const p=cur(g);const co=p.opened&&coFor(g,p.score,g.o.out==='double');return co?[co[0]]:[];},
+  route:g=>cur(g).opened?coFor(g,cur(g).score,g.o.out==='double'):null, // shown in the empty dart tiles
+  hint:g=>cur(g).opened?'':`${lbl('Start on')} ${chip('any double')}`,
+  targets(g){const co=MODES.x01.route(g);return co?[co[0]]:[];},
   call:g=>g.turn.bust?'Bust':turnWords(g.turn.startScore-cur(g).score),
   nextCall:(g,p)=>p.score<=170&&checkout(p.score,3,g.o.out==='double')?`${p.name}, you require ${p.score}`:p.name},
 cricket:{name:'Cricket',icon:'🦗',group:'Classic',desc:'Close your numbers and score on the ones others still have open',
@@ -167,7 +167,7 @@ o121:{name:'121',icon:'✅',group:'Practice',desc:'Check out 121 in 9 darts. Mak
   big:(g,p)=>p.left,
   sub:(g,p)=>`<div class="psub">Target ${p.target} · try ${Math.min(p.att+1,g.o.att)}/${g.o.att} · visit ${p.inA+1}/3</div>`,
   stats:(g,p)=>[['Made',`${p.succ}/${p.att}`]],
-  hint:g=>coHint(coFor(g,cur(g).left,true)),
+  route:g=>coFor(g,cur(g).left,true), // shown in the empty dart tiles
   targets(g){const co=coFor(g,cur(g).left,true);return co?[co[0]]:[];},
   call:g=>g.turn.ok?'Checked out!':g.turn.bust?'Bust':'',
   nextCall:(g,p)=>`${p.name}, you require ${p.left}`},
@@ -186,7 +186,7 @@ streak:{name:'Checkout Streak',icon:'🔥',group:'Practice',desc:'A random finis
   big:(g,p)=>p.left,
   sub:(g,p)=>hearts(p.lives,g.o.lives),
   stats:(g,p)=>[['Streak',p.streak],['Best',p.best]],
-  hint:g=>coHint(coFor(g,cur(g).left,true)),
+  route:g=>coFor(g,cur(g).left,true), // shown in the empty dart tiles
   targets(g){const co=coFor(g,cur(g).left,true);return co?[co[0]]:[];},
   call:g=>g.turn.ok?'Checked out!':'Missed',
   nextCall:(g,p)=>`${p.name}, ${p.left}`},

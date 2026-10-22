@@ -25,10 +25,12 @@ function renderPlayers(){
       <div class="pn"><span>${esc(o.name)}</span>${badge(o)}</div><b>${M.big(G,o)}</b></div>`).join('')}</div>`:''}`;
 }
 function renderTurn(){
-  const d=G.turn.darts,over=turnOver(G);
-  $$('.slot').forEach((el,i)=>{const h=d[i];
-    el.classList.toggle('sel',sel===i);el.classList.toggle('empty',!h);
-    el.textContent=h?(h.bo?'B/O':h.label):'';
+  const d=G.turn.darts,over=turnOver(G),M=MODE(G);
+  // a possible checkout fills the empty tiles with the darts to aim for
+  const route=!over&&!G.result&&M.route?M.route(G):null;
+  $$('.slot').forEach((el,i)=>{const h=d[i],co=!h&&route?route[i-d.length]:null;
+    el.classList.toggle('sel',sel===i);el.classList.toggle('empty',!h&&!co);el.classList.toggle('co',!!co);
+    el.textContent=h?(h.bo?'B/O':h.label):co?co.label:'';
     el.title=h?'Tap to correct this dart':i===d.length&&!over?'Tap to record a miss':'';});
   const tt=$('#turnTotal');tt.textContent=tText(G);tt.className='ttotal'+(G.turn.bust?' bust':'');
   const next=peekNext(G),btn=$('#btnNext');
